@@ -1,14 +1,17 @@
 <?php
 namespace CrosswordPuzzle\Generator;
 
+use CrosswordPuzzle\Model\Answer;
+
 class PuzzleBuilder
 {
-    private $answer_collection = null;
+    private $answers = [];
+    private $word_analysis = null;
 
     public function __construct()
     {
-        $this->answer_collection = new PuzzleAnswerCollection();
         $this->seedAnswers();
+        $this->analyzeAnswers();
     }
 
     private function seedAnswers()
@@ -18,8 +21,14 @@ class PuzzleBuilder
         $puzzle_data = json_decode($puzzle_json);
 
         foreach ($puzzle_data as $word => $clue) {
-            $this->answer_collection->add($word, $clue);
+            $this->answers[] = new Answer($word, $clue);
         }
+        return $this;
+    }
+
+    private function analyzeAnswers()
+    {
+        $this->word_analysis = new WordAnalysis($this->answers);
         return $this;
     }
 }

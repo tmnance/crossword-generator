@@ -3,7 +3,7 @@ require_once 'autoloader.php';
 
 use CrosswordPuzzle\Generator\PuzzleBuilder;
 
+echo '<pre>';
 $puzzle = new PuzzleBuilder();
 
-echo '<pre>';
-var_dump($puzzle);
+echo 'done';
