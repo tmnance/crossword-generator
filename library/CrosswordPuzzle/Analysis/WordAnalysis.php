@@ -1,12 +1,9 @@
 <?php
-namespace CrosswordPuzzle\Generator;
-
-use CrosswordPuzzle\Generator\WordMetric\Base as WordMetric;
+namespace CrosswordPuzzle\Analysis;
 
 class WordAnalysis
 {
-    private $word_metrics = [];
-    private $word_associations = [];
+    private $words = [];
 
     private $overall_letter_frequency = [];
     private $per_word_letter_frequency = [];
@@ -15,12 +12,12 @@ class WordAnalysis
     private $max_word_length = 0;
     private $average_word_length = 0;
 
-    public function __construct($answers)
+    public function __construct($words)
     {
-        foreach ($answers as $i => $answer) {
-            $this->word_metrics[] = new WordMetric($i, $answer);
-        }
+        $this->words = $words;
         $this->analyzeWords();
+$this->debug();
+// die;
     }
 
     private function analyzeWords()
@@ -34,8 +31,8 @@ class WordAnalysis
     private function processWordAssociations()
     {
         // compare everything to everything
-        foreach ($this->word_metrics as $word_metric) {
-            $word_metric->processWordAssociations($this->word_metrics);
+        foreach ($this->words as $word) {
+            $word->processWordAssociations($this->words);
         }
         return $this;
     }
@@ -43,10 +40,10 @@ class WordAnalysis
     private function processLetterFrequency()
     {
         // compare everything to everything
-        foreach ($this->word_metrics as $word_metric) {
-            $word = $word_metric->word;
+        foreach ($this->words as $word) {
+            $answer = $word->answer;
             // increase counter for each unique letter
-            $unique_letters = count_chars($word, 1);
+            $unique_letters = count_chars($answer, 1);
 
             foreach ($unique_letters as $letter_ascii => $frequency) {
                 $letter = chr($letter_ascii);
@@ -69,22 +66,24 @@ class WordAnalysis
     {
         // should be overridden
         $this->min_word_length = 99;
-        foreach ($this->word_metrics as $word_metric) {
-            $word = $word_metric->word;
-            $word_length = strlen($word);
+        foreach ($this->words as $word) {
+            $answer = $word->answer;
+            $word_length = strlen($answer);
             $this->total_word_length += $word_length;
             $this->min_word_length = min($word_length, $this->min_word_length);
             $this->max_word_length = max($word_length, $this->max_word_length);
         }
-        $this->average_word_length = $this->total_word_length / count($this->word_metrics);
+        $this->average_word_length = $this->total_word_length / count($this->words);
         return $this;
     }
 
     public function debug()
     {
-        var_dump('total_word_length', $this->total_word_length);
-        var_dump('min_word_length', $this->min_word_length);
-        var_dump('max_word_length', $this->max_word_length);
-        var_dump('average_word_length', $this->average_word_length);
+        echo "WordAnalysis::debug\n";
+        echo 'total_word_length = ' . $this->total_word_length . "\n";
+        echo 'min_word_length = ' . $this->min_word_length . "\n";
+        echo 'max_word_length = ' . $this->max_word_length . "\n";
+        echo 'average_word_length = ' . $this->average_word_length . "\n";
+        echo "\n";
     }
 }

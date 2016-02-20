@@ -1,7 +1,7 @@
 <?php
 require_once 'autoloader.php';
 
-use CrosswordPuzzle\Generator\PuzzleBuilder;
+use CrosswordPuzzle\Builder as PuzzleBuilder;
 
 echo '<pre>';
 $puzzle = new PuzzleBuilder();
