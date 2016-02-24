@@ -19,6 +19,26 @@ class Word
         $this->clue = $clue;
     }
 
+    public function getPositionMatchesForOtherWord(Word $other_word)
+    {
+        $position_matches = [];
+        foreach ($this->character_position_matching_words as $pos => $letter_matches) {
+            foreach ($letter_matches as $letter_match) {
+                if ($letter_match->comparison_word == $other_word) {
+                    $position_matches[] = $pos;
+                    break;
+                }
+            }
+        }
+        return $position_matches;
+    }
+
+    public function getPositionMatchesForLetter($letter)
+    {
+        $self_letters = str_split($this->answer);
+        return array_keys($self_letters, $letter);
+    }
+
     private function cleanAnswer($answer)
     {
         // o'brien to OBRIEN

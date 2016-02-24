@@ -13,4 +13,11 @@ class LetterMatch
         $this->comparison_word = $comparison_word;
         $this->letter_index = $letter_index;
     }
+
+    // allow direct public readonly access to certain attributes
+    public function __get($attribute)
+    {
+        $allowed_attributes = ['comparison_word', 'letter_index'];
+        return (in_array($attribute, $allowed_attributes) ? $this->$attribute : null);
+    }
 }

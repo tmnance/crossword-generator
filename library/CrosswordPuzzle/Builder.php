@@ -7,11 +7,13 @@ class Builder
 {
     private $words = [];
     private $word_analysis = null;
+    private $grid = null;
 
     public function __construct()
     {
-        $this->seedWords();
-        $this->analyzeWords();
+        $this->seedWords()
+            ->analyzeWords()
+            ->buildGrid();
     }
 
     private function seedWords()
@@ -29,6 +31,15 @@ class Builder
     private function analyzeWords()
     {
         $this->word_analysis = new WordAnalysis($this->words);
+        return $this;
+    }
+
+    private function buildGrid()
+    {
+        $this->grid = new Grid();
+        foreach ($this->words as $word) {
+            $this->grid->addWord($word);
+        }
         return $this;
     }
 }

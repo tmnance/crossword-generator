@@ -16,7 +16,7 @@ class WordAnalysis
     {
         $this->words = $words;
         $this->analyzeWords();
-$this->debug();
+// $this->debug();
     }
 
     private function analyzeWords()
@@ -32,7 +32,7 @@ $this->debug();
         // compare everything to everything
         foreach ($this->words as $word) {
             $word->processWordAssociations($this->words);
-$word->debug();
+// $word->debug();
         }
         return $this;
     }
