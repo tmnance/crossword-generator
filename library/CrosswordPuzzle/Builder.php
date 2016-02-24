@@ -38,7 +38,11 @@ class Builder
     {
         $this->grid = new Grid();
         foreach ($this->words as $word) {
-            $this->grid->addWord($word);
+            if (!$this->grid->addWord($word)) {
+                echo "bad grid!\n";
+                break;
+            }
+            $this->grid->debug();
         }
         return $this;
     }

@@ -5,9 +5,11 @@ use CrosswordPuzzle\Analysis\LetterMatch;
 
 class Word
 {
+    private $id = null;
     private $answer;
     private $clue;
     private $analysis = null;
+    private static $id_incr = 0;
 
     private $character_position_matching_words = [];
     private $matching_answers = [];
@@ -17,6 +19,7 @@ class Word
     {
         $this->answer = $this->cleanAnswer($answer);
         $this->clue = $clue;
+        $this->id = self::$id_incr++;
     }
 
     public function getPositionMatchesForOtherWord(Word $other_word)
@@ -98,7 +101,7 @@ class Word
     // allow direct public readonly access to certain attributes
     public function __get($attribute)
     {
-        $allowed_attributes = ['answer', 'clue', 'analysis', 'matching_letters_count'];
+        $allowed_attributes = ['id', 'answer', 'clue', 'analysis', 'matching_letters_count'];
         return (in_array($attribute, $allowed_attributes) ? $this->$attribute : null);
     }
 }

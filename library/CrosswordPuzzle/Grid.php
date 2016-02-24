@@ -78,9 +78,6 @@ class Grid
             }
         }
 
-
-        $this->debug();
-
         return $is_added;
     }
 
@@ -353,10 +350,8 @@ class Grid
         $dim_y = $this->getDimY();
 
         echo "Grid::debug\n";
-        echo "-dimensions = {$dim_x}x{$dim_y}\n";
         // has content
         if ($dim_y > 0) {
-            echo "-content = \n";
             $pos_x_list = range(0, $dim_x - 1);
             // pad each
             $pos_x_list = array_map(
@@ -366,9 +361,13 @@ class Grid
                 $pos_x_list
             );
 
-            echo '+' . str_repeat('--', $dim_x + 4) . "-+\n";
-            echo '|     ' . implode('', $pos_x_list) . "    |\n";
-            echo '|' . str_repeat('  ', $dim_x + 4) . " |\n";
+            $grid_box_top_bottom_border_row = '+' . str_repeat('--', $dim_x + 4) . "-+\n";
+            $grid_legend_x_row = '|     ' . implode('', $pos_x_list) . "    |\n";
+            $grid_spacer_row = '|' . str_repeat('  ', $dim_x + 4) . " |\n";
+
+            echo $grid_box_top_bottom_border_row;
+            echo $grid_legend_x_row;
+            echo $grid_spacer_row;
 
             foreach ($this->grid_content as $pos_y => $row) {
                 $pos_y = str_pad($pos_y, 2);
@@ -380,11 +379,11 @@ class Grid
                     $row
                 );
                 echo "| {$pos_y}  " . implode('', $row) . "  {$pos_y}|\n";
-                echo '|' . str_repeat('  ', $dim_x + 4) . " |\n";
+                echo $grid_spacer_row;
             }
 
-            echo '|     ' . implode('', $pos_x_list) . "    |\n";
-            echo '+' . str_repeat('--', $dim_x + 4) . "-+\n";
+            echo $grid_legend_x_row;
+            echo $grid_box_top_bottom_border_row;
         }
         echo "\n";
     }
