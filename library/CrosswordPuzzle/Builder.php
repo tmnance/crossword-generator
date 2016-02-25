@@ -7,7 +7,6 @@ class Builder
 {
     private $words = [];
     private $word_analysis = null;
-    private $grid = null;
 
     public function __construct()
     {
@@ -36,38 +35,55 @@ class Builder
 
     private function buildGrid()
     {
-        $this->grid = new Grid();
-        $failed_words = [];
-        $is_last_fail = false;
-        $remaining_words = $this->words;
+        return $this->buildGridFromWordSet($this->words);
+    }
 
-        while (count($remaining_words) > 0) {
-            $word = array_shift($remaining_words);
-            echo "attempting word {$word->answer}...\n";
+    private function buildGridFromWordSet($words)
+    {
+        $grid = new Grid();
 
-            $valid_placements = $this->grid->findValidWordPlacements($word);
-            echo "--matching placement count: " . count($valid_placements) . "\n";
-
-            if (count($valid_placements) > 0) {
-                $this->grid->insertWordPlacement($valid_placements[0]);
-                // success!
-                echo "--success\n";
-                if ($is_last_fail) {
-                    $remaining_words = array_merge($remaining_words, $failed_words);
-                    $failed_words = [];
-                }
-                $is_last_fail = false;
-                $this->grid->debug();
-            } else {
-                // fail
-                echo "--fail\n";
-                $is_last_fail = true;
-                $failed_words[] = $word;
-            }
-        }
-
-        echo "failed word count = " . count($failed_words) . "\n";
+        $this->addNextWordPlacementToGrid($grid, $words);
 
         return $this;
+    }
+
+    private function addNextWordPlacementToGrid(
+        Grid $grid,
+        array $remaining_words,
+        array $failed_words = [],
+        $is_last_fail = false
+    )
+    {
+        $next_word = array_shift($remaining_words);
+echo "attempting word {$next_word->answer}...\n";
+
+        $valid_placements = $grid->findValidWordPlacements($next_word);
+echo "--matching placement count: " . count($valid_placements) . "\n";
+
+        if (count($valid_placements) > 0) {
+            $grid->insertWordPlacement($valid_placements[0]);
+            // success!
+echo "--success\n";
+            if ($is_last_fail) {
+                $remaining_words = array_merge($remaining_words, $failed_words);
+                $failed_words = [];
+            }
+            $is_last_fail = false;
+$grid->debug();
+        } else {
+            // fail
+echo "--fail\n";
+            $is_last_fail = true;
+            $failed_words[] = $word;
+        }
+
+        if (count($remaining_words) > 0) {
+            $this->addNextWordPlacementToGrid(
+                $grid,
+                $remaining_words,
+                $failed_words,
+                $is_last_fail
+            );
+        }
     }
 }
