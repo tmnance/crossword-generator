@@ -6,12 +6,27 @@ class Grid
     const ORIENTATION_HORIZONTAL = 'horizontal';
     const ORIENTATION_VERTICAL = 'vertical';
     const POSITION_OFFGRID = 'offgrid';
+    const INSERT_FAIL = 'insert_fail';
 
     private $grid_content = [];
     private $grid_words = [];
+    private $decision_sequence = [];
+    private $total_interceptions = 0;
 
     public function __construct()
     {
+    }
+
+    private function addInsertDecisionSuccess($word, $insert_x, $insert_y, $orientation)
+    {
+        $decision = implode(',', [$word->id, $insert_x, $insert_y, $orientation]);
+        $this->decision_sequence[] = $decision;
+    }
+
+    private function addInsertDecisionFail($word)
+    {
+        $decision = implode(',', [$word->id, self::INSERT_FAIL]);
+        $this->decision_sequence[] = $decision;
     }
 
     public function addWord(Word $insert_word)
@@ -78,6 +93,11 @@ class Grid
             }
         }
 
+        if (!$is_added) {
+            $this->addInsertDecisionFail($insert_word);
+            var_dump($this->decision_sequence);
+        }
+
         return $is_added;
     }
 
@@ -103,6 +123,7 @@ class Grid
         $does_fit = true;
         $word_letters = str_split($word->answer);
         $empty_letters = [null, self::POSITION_OFFGRID];
+        $num_interceptions = 0;
 
         foreach ($word_letters as $pos => $letter) {
             $test_x = $this->getXOffset(
@@ -117,38 +138,34 @@ class Grid
             );
 
             $coordinate_letter = $this->getLetterAtCoordinates($test_x, $test_y);
-            $bad_letters = array_merge($empty_letters, [$letter]);
+            $is_intersection = ($coordinate_letter == $letter);
+            if ($is_intersection) {
+                $num_interceptions++;
+            }
 
-            if (!in_array($coordinate_letter, $bad_letters)) {
+            if (!in_array($coordinate_letter, $empty_letters) && !$is_intersection) {
                 $does_fit = false;
                 break;
-            } else {
-                // additional spacing check (don't want different words touching in same orientation)
+            } elseif ($coordinate_letter != $letter) {
+                // additional spacing check when not intersecting
+                //   (don't want different words touching in same orientation)
                 foreach ([-1, 1] as $dir) {
-                    $adjacent_filled_num = 0;
-                    foreach ([0, 1] as $incr) {
-                        $adjacent_test_x = $test_x;
-                        $adjacent_test_y = $test_x;
-                        switch ($orientation) {
-                            case self::ORIENTATION_VERTICAL:
-                                $adjacent_test_x += $dir;
-                                $adjacent_test_y += $incr;
-                                break;
-                            default:
-                                $adjacent_test_x += $incr;
-                                $adjacent_test_y += $dir;
-                                break;
-                        }
+                    $adjacent_test_x = $this->getXOffset(
+                        $test_x,
+                        $dir,
+                        $this->getOppositeOrientation($orientation)
+                    );
+                    $adjacent_test_y = $this->getYOffset(
+                        $test_y,
+                        $dir,
+                        $this->getOppositeOrientation($orientation)
+                    );
 
-                        $adjacent_letter = $this->getLetterAtCoordinates(
-                            $adjacent_test_x,
-                            $adjacent_test_y
-                        );
-                        if (!in_array($adjacent_letter, $empty_letters)) {
-                            $adjacent_filled_num++;
-                        }
-                    }
-                    if ($adjacent_filled_num == 2) {
+                    $adjacent_letter = $this->getLetterAtCoordinates(
+                        $adjacent_test_x,
+                        $adjacent_test_y
+                    );
+                    if (!in_array($adjacent_letter, $empty_letters)) {
                         // bad match
                         $does_fit = false;
                         break 2;
@@ -183,6 +200,12 @@ class Grid
                 }
             }
         }
+
+        if ($does_fit) {
+            // total interception count is used for scoring best match
+            $this->total_interceptions += $num_interceptions;
+        }
+
         return $does_fit;
     }
 
@@ -191,6 +214,8 @@ class Grid
     {
         $does_fit = $this->checkWordFitAtCoordinates($word, $insert_x, $insert_y, $orientation);
         if ($does_fit) {
+            $this->addInsertDecisionSuccess($word, $insert_x, $insert_y, $orientation);
+
             // we know this word fits into this position with no letter conflicts
             $grid_dim_x = $this->getDimX();
             $grid_dim_y = $this->getDimY();

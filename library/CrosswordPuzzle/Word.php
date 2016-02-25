@@ -19,7 +19,7 @@ class Word
     {
         $this->answer = $this->cleanAnswer($answer);
         $this->clue = $clue;
-        $this->id = self::$id_incr++;
+        $this->id = ++self::$id_incr;
     }
 
     public function getPositionMatchesForOtherWord(Word $other_word)

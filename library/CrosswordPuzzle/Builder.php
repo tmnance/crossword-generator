@@ -38,6 +38,7 @@ class Builder
     {
         $this->grid = new Grid();
         foreach ($this->words as $word) {
+            echo "attempting word {$word->answer}...\n";
             if (!$this->grid->addWord($word)) {
                 echo "bad grid!\n";
                 break;
