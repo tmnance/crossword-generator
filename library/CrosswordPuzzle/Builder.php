@@ -37,14 +37,32 @@ class Builder
     private function buildGrid()
     {
         $this->grid = new Grid();
-        foreach ($this->words as $word) {
+        $failed_words = [];
+        $is_last_fail = false;
+        $remaining_words = $this->words;
+
+        while (count($remaining_words) > 0) {
+            $word = array_shift($remaining_words);
             echo "attempting word {$word->answer}...\n";
-            if (!$this->grid->addWord($word)) {
-                echo "bad grid!\n";
-                break;
+            if ($this->grid->addWord($word)) {
+                // success!
+                echo "--success\n";
+                if ($is_last_fail) {
+                    $remaining_words = array_merge($remaining_words, $failed_words);
+                    $failed_words = [];
+                }
+                $is_last_fail = false;
+                $this->grid->debug();
+            } else {
+                // fail
+                echo "--fail\n";
+                $is_last_fail = true;
+                $failed_words[] = $word;
             }
-            $this->grid->debug();
         }
+
+        echo "failed word count = " . count($failed_words) . "\n";
+
         return $this;
     }
 }
