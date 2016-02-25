@@ -6,36 +6,23 @@ class Grid
     const ORIENTATION_HORIZONTAL = 'horizontal';
     const ORIENTATION_VERTICAL = 'vertical';
     const POSITION_OFFGRID = 'offgrid';
-    const INSERT_FAIL = 'insert_fail';
 
-    private $grid_content = [];
-    private $grid_words = [];
-    private $decision_sequence = [];
-    private $total_interceptions = 0;
+    private $grid_matrix = [];
+    private $inserted_words = [];
+    private $interception_count = 0;
 
     public function __construct()
     {
     }
 
-    private function addInsertDecisionSuccess($word, $insert_x, $insert_y, $orientation)
-    {
-        $decision = implode(',', [$word->id, $insert_x, $insert_y, $orientation]);
-        $this->decision_sequence[] = $decision;
-    }
-
-    private function addInsertDecisionFail($word)
-    {
-        $decision = implode(',', [$word->id, self::INSERT_FAIL]);
-        $this->decision_sequence[] = $decision;
-    }
-
-    public function addWord(Word $insert_word)
+    public function findValidWordPlacements(Word $insert_word)
     {
         $is_added = false;
+        $valid_placements = [];
 
-        if (empty($this->grid_words)) {
+        if (empty($this->inserted_words)) {
             // first word, insert horizontally
-            $is_added = $this->addWordAtCoordinates(
+            $valid_placements[] = new GridWordPlacement(
                 $insert_word,
                 0,
                 0,
@@ -43,20 +30,19 @@ class Grid
             );
         } else {
             // try to fit next to an existing word
-
-            foreach ($this->grid_words as $grid_word) {
+            foreach ($this->inserted_words as $grid_word) {
                 $comparison_word = $grid_word->word;
                 $comparison_position_matches = $comparison_word->getPositionMatchesForOtherWord($insert_word);
                 $insert_orientation = $this->getOppositeOrientation($grid_word->orientation);
 
                 foreach ($comparison_position_matches as $comparison_match_pos) {
                     $base_insert_x = $this->getXOffset(
-                        $grid_word->pos_x,
+                        $grid_word->x,
                         $comparison_match_pos,
                         $grid_word->orientation
                     );
                     $base_insert_y = $this->getYOffset(
-                        $grid_word->pos_y,
+                        $grid_word->y,
                         $comparison_match_pos,
                         $grid_word->orientation
                     );
@@ -78,27 +64,100 @@ class Grid
                             $insert_orientation
                         );
 
-                        $is_added = $this->addWordAtCoordinates(
+                        $does_fit = $this->checkWordFitAtCoordinates(
                             $insert_word,
                             $insert_x,
                             $insert_y,
                             $insert_orientation
                         );
-                        if ($is_added) {
-                            // word successfully inserted
-                            break 3;
+                        if ($does_fit) {
+                            $valid_placements[] = new GridWordPlacement(
+                                $insert_word,
+                                $insert_x,
+                                $insert_y,
+                                $insert_orientation
+                            );
                         }
                     }
                 }
             }
         }
 
-        if (!$is_added) {
-            $this->addInsertDecisionFail($insert_word);
-            var_dump($this->decision_sequence);
+        return $valid_placements;
+    }
+
+    // adding new word attached to a specific existing x,y coordinate that we know has a letter match
+    public function insertWordPlacement(GridWordPlacement $word_placement)
+    {
+        $word = $word_placement->word;
+        $insert_x = $word_placement->x;
+        $insert_y = $word_placement->y;
+        $orientation = $word_placement->orientation;
+
+        // we know this word fits into this position with no letter conflicts
+        $grid_dim_x = $this->getDimX();
+        $grid_dim_y = $this->getDimY();
+        $grid_offset_x = 0;
+        $grid_offset_y = 0;
+        $word_length = strlen($word->answer);
+        $insert_letters = str_split($word->answer);
+
+        // grid resize checks
+        if ($insert_x < 0) {
+            $grid_offset_x = $insert_x * -1;
+            $grid_dim_x += $grid_offset_x;
+            $insert_x = 0;
+        }
+        if ($insert_y < 0) {
+            $grid_offset_y = $insert_y * -1;
+            $grid_dim_y += $grid_offset_y;
+            $insert_y = 0;
         }
 
-        return $is_added;
+        $end_x = $this->getXOffset(
+            $insert_x,
+            $word_length,
+            $orientation
+        );
+        $end_y = $this->getYOffset(
+            $insert_y,
+            $word_length,
+            $orientation
+        );
+
+        $grid_dim_x = max($end_x, $grid_dim_x, 1);
+        $grid_dim_y = max($end_y, $grid_dim_y, 1);
+
+        // will attempt to insert in expanded grid that will fit the new word
+        $this->expandGrid($grid_dim_x, $grid_dim_y, $grid_offset_x, $grid_offset_y);
+
+        foreach ($insert_letters as $pos => $insert_letter) {
+            $letter_x = $this->getXOffset(
+                $insert_x,
+                $pos,
+                $orientation
+            );
+            $letter_y = $this->getYOffset(
+                $insert_y,
+                $pos,
+                $orientation
+            );
+
+            $this->setLetterAtCoordinates(
+                $insert_letter,
+                $letter_x,
+                $letter_y
+            );
+        }
+
+        // update in case changed
+        $word_placement->x = $insert_x;
+        $word_placement->y = $insert_y;
+
+        // add word
+        $this->inserted_words[] = $word_placement;
+
+        return $this;
     }
 
     private function getXOffset($x, $offset, $orientation)
@@ -123,7 +182,6 @@ class Grid
         $does_fit = true;
         $word_letters = str_split($word->answer);
         $empty_letters = [null, self::POSITION_OFFGRID];
-        $num_interceptions = 0;
 
         foreach ($word_letters as $pos => $letter) {
             $test_x = $this->getXOffset(
@@ -139,9 +197,6 @@ class Grid
 
             $coordinate_letter = $this->getLetterAtCoordinates($test_x, $test_y);
             $is_intersection = ($coordinate_letter == $letter);
-            if ($is_intersection) {
-                $num_interceptions++;
-            }
 
             if (!in_array($coordinate_letter, $empty_letters) && !$is_intersection) {
                 $does_fit = false;
@@ -201,99 +256,18 @@ class Grid
             }
         }
 
-        if ($does_fit) {
-            // total interception count is used for scoring best match
-            $this->total_interceptions += $num_interceptions;
-        }
-
         return $does_fit;
-    }
-
-    // adding new word attached to a specific existing x,y coordinate that we know has a letter match
-    private function addWordAtCoordinates($word, $insert_x, $insert_y, $orientation = self::ORIENTATION_HORIZONTAL)
-    {
-        $does_fit = $this->checkWordFitAtCoordinates($word, $insert_x, $insert_y, $orientation);
-        if ($does_fit) {
-            $this->addInsertDecisionSuccess($word, $insert_x, $insert_y, $orientation);
-
-            // we know this word fits into this position with no letter conflicts
-            $grid_dim_x = $this->getDimX();
-            $grid_dim_y = $this->getDimY();
-            $grid_offset_x = 0;
-            $grid_offset_y = 0;
-            $word_length = strlen($word->answer);
-            $insert_letters = str_split($word->answer);
-
-            // grid resize checks
-            if ($insert_x < 0) {
-                $grid_offset_x = $insert_x * -1;
-                $grid_dim_x += $grid_offset_x;
-                $insert_x = 0;
-            }
-            if ($insert_y < 0) {
-                $grid_offset_y = $insert_y * -1;
-                $grid_dim_y += $grid_offset_y;
-                $insert_y = 0;
-            }
-
-            $end_x = $this->getXOffset(
-                $insert_x,
-                $word_length,
-                $orientation
-            );
-            $end_y = $this->getYOffset(
-                $insert_y,
-                $word_length,
-                $orientation
-            );
-
-            $grid_dim_x = max($end_x, $grid_dim_x, 1);
-            $grid_dim_y = max($end_y, $grid_dim_y, 1);
-
-            // will attempt to insert in expanded grid that will fit the new word
-            $this->expandGrid($grid_dim_x, $grid_dim_y, $grid_offset_x, $grid_offset_y);
-
-            foreach ($insert_letters as $pos => $insert_letter) {
-                $letter_x = $this->getXOffset(
-                    $insert_x,
-                    $pos,
-                    $orientation
-                );
-                $letter_y = $this->getYOffset(
-                    $insert_y,
-                    $pos,
-                    $orientation
-                );
-
-                $this->setLetterAtCoordinates(
-                    $insert_letter,
-                    $letter_x,
-                    $letter_y
-                );
-            }
-
-            // add word
-            $this->grid_words[] = new GridWord(
-                $insert_x,
-                $insert_y,
-                $orientation,
-                $word
-            );
-            return true;
-        } else {
-            return false;
-        }
     }
 
     private function expandGrid($new_x, $new_y, $offset_x = 0, $offset_y = 0)
     {
         $dim_x = $this->getDimX();
         $dim_y = $this->getDimY();
-        $grid_content = $this->grid_content;
+        $grid_matrix = $this->grid_matrix;
         if ($new_x > $dim_x) {
             // dimension x resize
             $empty_col = null;
-            foreach ($grid_content as &$row) {
+            foreach ($grid_matrix as &$row) {
                 // modify each existing row with pre/post col padding
                 if ($offset_x > 0) {
                     // pad before
@@ -308,12 +282,12 @@ class Grid
             $empty_row = array_pad([], $new_x, null);
             if ($offset_y > 0) {
                 // pad before
-                $grid_content = array_pad($grid_content, (-1 * ($dim_y + $offset_y)), $empty_row);
+                $grid_matrix = array_pad($grid_matrix, (-1 * ($dim_y + $offset_y)), $empty_row);
             }
             // pad after
-            $grid_content = array_pad($grid_content, $new_y, $empty_row);
+            $grid_matrix = array_pad($grid_matrix, $new_y, $empty_row);
         }
-        $this->grid_content = $grid_content;
+        $this->grid_matrix = $grid_matrix;
 
         // update grid word pointers
         $this->offsetAllWords($offset_x, $offset_y);
@@ -324,12 +298,12 @@ class Grid
     private function offsetAllWords($offset_x, $offset_y)
     {
         if ($offset_x > 0 || $offset_y) {
-            foreach ($this->grid_words as $grid_word) {
+            foreach ($this->inserted_words as $grid_word) {
                 if ($offset_x > 0) {
-                    $grid_word->pos_x = $grid_word->pos_x + $offset_x;
+                    $grid_word->x = $grid_word->x + $offset_x;
                 }
                 if ($offset_y > 0) {
-                    $grid_word->pos_y = $grid_word->pos_y + $offset_y;
+                    $grid_word->y = $grid_word->y + $offset_y;
                 }
             }
         }
@@ -341,12 +315,17 @@ class Grid
         if ($x < 0 || $y < 0 || $x >= $this->getDimX() || $y >= $this->getDimY()) {
             return self::POSITION_OFFGRID;
         }
-        return $this->grid_content[$y][$x] ?: null;
+        return $this->grid_matrix[$y][$x] ?: null;
     }
 
     private function setLetterAtCoordinates($letter, $x, $y)
     {
-        $this->grid_content[$y][$x] = $letter;
+        if ($this->grid_matrix[$y][$x] == $letter) {
+            // interception count will used for scoring
+            $this->interception_count++;
+        } else {
+            $this->grid_matrix[$y][$x] = $letter;
+        }
         return $this;
     }
 
@@ -361,12 +340,12 @@ class Grid
 
     private function getDimX()
     {
-        return (empty($this->grid_content) ? 0 : count($this->grid_content[0]));
+        return (empty($this->grid_matrix) ? 0 : count($this->grid_matrix[0]));
     }
 
     private function getDimY()
     {
-        return count($this->grid_content);
+        return count($this->grid_matrix);
     }
 
     public function debug()
@@ -394,7 +373,7 @@ class Grid
             echo $grid_legend_x_row;
             echo $grid_spacer_row;
 
-            foreach ($this->grid_content as $pos_y => $row) {
+            foreach ($this->grid_matrix as $pos_y => $row) {
                 $pos_y = str_pad($pos_y, 2);
                 // treat null cols as spaces
                 $row = array_map(
@@ -410,6 +389,7 @@ class Grid
             echo $grid_legend_x_row;
             echo $grid_box_top_bottom_border_row;
         }
+
         echo "\n";
     }
 }

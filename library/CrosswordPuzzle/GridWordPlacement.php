@@ -1,36 +1,35 @@
 <?php
 namespace CrosswordPuzzle;
 
-class GridWord
+class GridWordPlacement
 {
-    private $pos_x;
-    private $pos_y;
-    private $orientation;
     private $word;
+    private $x;
+    private $y;
+    private $orientation;
 
-    public function __construct($pos_x, $pos_y, $orientation, $word)
+    public function __construct(Word $word, $x, $y, $orientation)
     {
-        $this->pos_x = $pos_x;
-        $this->pos_y = $pos_y;
-        $this->orientation = $orientation;
         $this->word = $word;
+        $this->x = $x;
+        $this->y = $y;
+        $this->orientation = $orientation;
     }
 
     // allow direct public readonly access to certain attributes
     public function __get($attribute)
     {
-        $allowed_attributes = ['pos_x', 'pos_y', 'orientation', 'word'];
+        $allowed_attributes = ['word', 'x', 'y', 'orientation'];
         return (in_array($attribute, $allowed_attributes) ? $this->$attribute : null);
     }
 
     // allow direct public write access to certain attributes
     public function __set($attribute, $value)
     {
-        $allowed_attributes = ['pos_x', 'pos_y'];
+        $allowed_attributes = ['x', 'y'];
         if (in_array($attribute, $allowed_attributes)) {
             $this->$attribute = $value;
         }
-// echo "set {$this->word->answer}->{$attribute} = {$value}!\n";
         return $this;
     }
 }

@@ -44,7 +44,12 @@ class Builder
         while (count($remaining_words) > 0) {
             $word = array_shift($remaining_words);
             echo "attempting word {$word->answer}...\n";
-            if ($this->grid->addWord($word)) {
+
+            $valid_placements = $this->grid->findValidWordPlacements($word);
+            echo "--matching placement count: " . count($valid_placements) . "\n";
+
+            if (count($valid_placements) > 0) {
+                $this->grid->insertWordPlacement($valid_placements[0]);
                 // success!
                 echo "--success\n";
                 if ($is_last_fail) {
