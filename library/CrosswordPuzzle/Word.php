@@ -82,7 +82,7 @@ class Word
 
         if (empty($this->character_position_matching_words)) {
             // this word matches no others, fail
-            throw new \Exception('Error generating puzzle :: orphan word "' . $this->answer . '"');
+            throw new \Exception("Error generating puzzle :: orphan word \"{$this->answer}\"");
         }
 
         $this->matching_answers = array_unique($matching_answers);

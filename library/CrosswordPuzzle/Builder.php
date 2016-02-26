@@ -5,6 +5,9 @@ use CrosswordPuzzle\Analysis\WordAnalysis;
 
 class Builder
 {
+    const MAX_WORD_COUNT = 15;
+    const MAX_WORD_LENGTH = 15;
+
     private $words = [];
     private $word_source = null;
     private $word_analysis = null;
@@ -38,12 +41,32 @@ class Builder
     private function seedWords()
     {
         if (empty($this->word_source)) {
-            throw new Exception('No word source set', 1);
+            throw new \Exception('Error generating puzzle :: No word source set', 1);
         }
-        $puzzle_json = file_get_contents($this->word_source);
-        $puzzle_data = json_decode($puzzle_json);
+        if (is_array($this->word_source)) {
+            $puzzle_data = $this->word_source;
+        } else {
+            $puzzle_json = file_get_contents($this->word_source);
+            $puzzle_data = json_decode($puzzle_json);
+        }
 
+        $word_count = count($puzzle_data);
+        $max_word_count = self::MAX_WORD_COUNT;
+        if ($word_count > $max_word_count) {
+            throw new \Exception(
+                "Error generating puzzle :: more words ({$word_count}) than the limit ({$max_word_count})"
+            );
+        }
+
+        $max_word_length = self::MAX_WORD_LENGTH;
         foreach ($puzzle_data as $answer => $clue) {
+            $word_length = strlen($answer);
+            if ($word_length > $max_word_length) {
+                throw new \Exception(
+                    "Error generating puzzle :: word length of \"{$answer}\" ({$word_length})" .
+                    " greater than the limit ({$max_word_length})"
+                );
+            }
             $this->words[] = new Word($answer, $clue);
         }
         return $this;

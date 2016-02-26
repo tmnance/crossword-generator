@@ -1,5 +1,5 @@
 <?php
-define('CLASS_ROOT', './library/');
+define('CLASS_ROOT', 'library/');
 
 spl_autoload_register(
     function($className) {

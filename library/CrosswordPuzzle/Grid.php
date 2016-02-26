@@ -319,7 +319,7 @@ class Grid
 
     private function offsetAllWords($offset_x, $offset_y)
     {
-        if ($offset_x > 0 || $offset_y) {
+        if ($offset_x > 0 || $offset_y > 0) {
             foreach ($this->inserted_words as $grid_word) {
                 if ($offset_x > 0) {
                     $grid_word->x = $grid_word->x + $offset_x;
