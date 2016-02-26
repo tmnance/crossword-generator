@@ -1,4 +1,4 @@
-<?
+<?php
 namespace CrosswordPuzzle\Analysis;
 
 use CrosswordPuzzle\Word;
