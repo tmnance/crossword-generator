@@ -74,7 +74,7 @@ $grid->debug();
             // fail
 echo "--fail\n";
             $is_last_fail = true;
-            $failed_words[] = $word;
+            $failed_words[] = $next_word;
         }
 
         if (count($remaining_words) > 0) {
