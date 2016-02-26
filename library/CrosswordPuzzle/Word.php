@@ -104,4 +104,9 @@ class Word
         $allowed_attributes = ['id', 'answer', 'clue', 'analysis', 'matching_letters_count'];
         return (in_array($attribute, $allowed_attributes) ? $this->$attribute : null);
     }
+
+    public function getScore()
+    {
+        return count($this->matching_answers) * $this->matching_letters_count;
+    }
 }

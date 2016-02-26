@@ -7,12 +7,26 @@ class Builder
 {
     private $words = [];
     private $word_analysis = null;
+    private $start_time = null;
+    private $min_grid_dimension_score = null;
 
     public function __construct()
     {
-        $this->seedWords()
-            ->analyzeWords()
-            ->buildGrid();
+        $this->start_time = microtime(true);
+        $this->seedWords();
+echo 'seedWords -- ' . $this->getElapsedTime() . "\n";
+        $this->analyzeWords();
+echo 'analyzeWords -- ' . $this->getElapsedTime() . "\n";
+        $this->buildGrid();
+echo 'buildGrid -- ' . $this->getElapsedTime() . "\n";
+
+        $best_grid = Grid::getBestScoreGrid();
+        $best_grid->debug();
+    }
+
+    private function getElapsedTime()
+    {
+        return microtime(true) - $this->start_time;
     }
 
     private function seedWords()
@@ -35,50 +49,94 @@ class Builder
 
     private function buildGrid()
     {
-        return $this->buildGridFromWordSet($this->words);
+        $words = $this->words;
+        // shuffle($words);
+        // // sort by word score
+        // usort(
+        //     $words,
+        //     function ($a, $b) {
+        //         $a_score = $a->getScore();
+        //         $b_score = $b->getScore();
+        //         if ($a_score == $b_score) {
+        //             return 0;
+        //         }
+        //         return ($a_score > $b_score) ? -1 : 1;
+        //     }
+        // );
+        $this->buildGridFromWordSet($words);
+
+        return $this;
     }
 
     private function buildGridFromWordSet($words)
     {
         $grid = new Grid();
-
-        $this->addNextWordPlacementToGrid($grid, $words);
-
+        $this->processNextGridWordPlacement($grid, $words);
         return $this;
     }
 
-    private function addNextWordPlacementToGrid(
+    private function updateMinGridDimensionScore(Grid $grid)
+    {
+        $dimension_score = $grid->getDimensionScore();
+        if (empty($this->min_grid_dimension_score) || $dimension_score < $this->min_grid_dimension_score) {
+            $this->min_grid_dimension_score = $dimension_score;
+        }
+    }
+
+    private function processNextGridWordPlacement(
         Grid $grid,
         array $remaining_words,
         array $failed_words = [],
         $is_last_fail = false
     )
     {
+        if (count($remaining_words) == 0) {
+            if (count($failed_words) == 0) {
+                $this->updateMinGridDimensionScore($grid);
+            }
+            return;
+        }
+        if (!empty($this->min_grid_dimension_score) && $grid->getDimensionScore() > $this->min_grid_dimension_score) {
+            return;
+        }
+
         $next_word = array_shift($remaining_words);
-echo "attempting word {$next_word->answer}...\n";
-
         $valid_placements = $grid->findValidWordPlacements($next_word);
-echo "--matching placement count: " . count($valid_placements) . "\n";
-
         if (count($valid_placements) > 0) {
-            $grid->insertWordPlacement($valid_placements[0]);
             // success!
-echo "--success\n";
             if ($is_last_fail) {
                 $remaining_words = array_merge($remaining_words, $failed_words);
                 $failed_words = [];
             }
             $is_last_fail = false;
-$grid->debug();
         } else {
             // fail
-echo "--fail\n";
             $is_last_fail = true;
             $failed_words[] = $next_word;
         }
 
-        if (count($remaining_words) > 0) {
-            $this->addNextWordPlacementToGrid(
+        if (!$is_last_fail) {
+            // prep placement grid copies (if necessary) before we alter them
+            $placement_grids = [];
+            foreach ($valid_placements as $i => $valid_placement) {
+                $placement_grids[] = ($i == 0 ? $grid : clone $grid);
+            }
+
+            foreach ($valid_placements as $i => $valid_placement) {
+                // each alternate placement choice has its own grid
+                $this_grid = $placement_grids[$i];
+                $this_grid->insertWordPlacement($valid_placement);
+
+                $this->processNextGridWordPlacement(
+                    $this_grid,
+                    $remaining_words,
+                    $failed_words,
+                    $is_last_fail
+                );
+            }
+        } else {
+            // not adding a word but keep going anyway just in case there are more words to try
+            $this->processNextGridWordPlacement(
                 $grid,
                 $remaining_words,
                 $failed_words,

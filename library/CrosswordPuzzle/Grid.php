@@ -11,8 +11,30 @@ class Grid
     private $inserted_words = [];
     private $interception_count = 0;
 
+    private static $all_grids = [];
+
     public function __construct()
     {
+        self::$all_grids[] = $this;
+    }
+
+    public function __clone()
+    {
+        self::$all_grids[] = $this;
+    }
+
+    public static function getBestScoreGrid()
+    {
+        $best_grid = null;
+        $best_score = -100000000000;
+        foreach (self::$all_grids as $grid) {
+            $score = $grid->getScore();
+            if ($score > $best_score) {
+                $best_grid = $grid;
+                $best_score = $score;
+            }
+        }
+        return $best_grid;
     }
 
     public function findValidWordPlacements(Word $insert_word)
@@ -360,36 +382,74 @@ class Grid
             // pad each
             $pos_x_list = array_map(
                 function ($value) {
-                    return str_pad($value, 2);
+                    return str_pad($value, 3);
                 },
                 $pos_x_list
             );
 
-            $grid_box_top_bottom_border_row = '+' . str_repeat('--', $dim_x + 4) . "-+\n";
-            $grid_legend_x_row = '|     ' . implode('', $pos_x_list) . "    |\n";
-            $grid_spacer_row = '|' . str_repeat('  ', $dim_x + 4) . " |\n";
+            $grid_box_top_bottom_border_row = '+' . str_repeat('---', $dim_x + 4) . "-+\n";
+            $grid_legend_x_row = '|       ' . implode('', $pos_x_list) . "      |\n";
+            $grid_spacer_row = '|' . str_repeat('   ', $dim_x + 4) . " |\n";
 
             echo $grid_box_top_bottom_border_row;
             echo $grid_legend_x_row;
             echo $grid_spacer_row;
 
             foreach ($this->grid_matrix as $pos_y => $row) {
-                $pos_y = str_pad($pos_y, 2);
+                $pos_y = str_pad($pos_y, 3);
                 // treat null cols as spaces
                 $row = array_map(
                     function ($value) {
-                        return ($value ?: ' ') . ' ';
+                        return ($value ?: ' ') . '  ';
                     },
                     $row
                 );
-                echo "| {$pos_y}  " . implode('', $row) . "  {$pos_y}|\n";
+                echo "| {$pos_y}   " . implode('', $row) . "   {$pos_y}|\n";
                 echo $grid_spacer_row;
             }
 
             echo $grid_legend_x_row;
             echo $grid_box_top_bottom_border_row;
+
+            echo "METRICS:\n";
+            var_dump($this->getMetrics());
+            var_dump($this->getDimensionScore());
+            var_dump($this->getScore());
         }
 
         echo "\n";
+    }
+
+    private function getMetrics()
+    {
+        $dim_x = $this->getDimX();
+        $dim_y = $this->getDimY();
+        return [
+            'word_count' => count($this->inserted_words),
+            'dim_size' => ($dim_x * $dim_y),
+            // smaller the better (minimum 1)
+            'dim_ratio_deviation' => (max($dim_x, $dim_y) / (min($dim_x, $dim_y) ?: 1)),
+            'interception_count' => $this->interception_count,
+            'interception_bonus' => 1 + $this->interception_count - count($this->inserted_words),
+        ];
+    }
+
+    public function getDimensionScore()
+    {
+        // smaller the better
+        $metrics = $this->getMetrics();
+
+        $dimension_score = $metrics['dim_size'] - $metrics['interception_bonus'] * 25;
+        $dimension_score *= $metrics['dim_ratio_deviation'];
+        return 10000 + $dimension_score;
+    }
+
+    public function getScore($output = false)
+    {
+        // higher is better
+        // word count is by far most important
+        $score = count($this->inserted_words) * 100000 - $this->getDimensionScore();
+
+        return intval($score);
     }
 }
