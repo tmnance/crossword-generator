@@ -62,5 +62,3 @@ echo '</pre>';
         </td>
     </tr>
 </table>
-
-
