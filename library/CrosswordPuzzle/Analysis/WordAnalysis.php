@@ -16,7 +16,6 @@ class WordAnalysis
     {
         $this->words = $words;
         $this->analyzeWords();
-// $this->debug();
     }
 
     private function analyzeWords()
@@ -32,7 +31,6 @@ class WordAnalysis
         // compare everything to everything
         foreach ($this->words as $word) {
             $word->processWordAssociations($this->words);
-// $word->debug();
         }
         return $this;
     }
@@ -80,10 +78,10 @@ class WordAnalysis
     public function debug()
     {
         echo "WordAnalysis::debug\n";
-        echo '-total_word_length = ' . $this->total_word_length . "\n";
-        echo '-min_word_length = ' . $this->min_word_length . "\n";
-        echo '-max_word_length = ' . $this->max_word_length . "\n";
-        echo '-average_word_length = ' . $this->average_word_length . "\n";
+        echo '-total_word_length: ' . $this->total_word_length . "\n";
+        echo '-min_word_length: ' . $this->min_word_length . "\n";
+        echo '-max_word_length: ' . $this->max_word_length . "\n";
+        echo '-average_word_length: ' . $this->average_word_length . "\n";
         echo "\n";
     }
 }

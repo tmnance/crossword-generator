@@ -92,9 +92,9 @@ class Word
     public function debug()
     {
         echo "Word::debug\n";
-        echo '-word = ' . $this->answer . "\n";
-        echo '-matching_letters_count = ' . $this->matching_letters_count . "\n";
-        echo '-matching_answers = ' . count($this->matching_answers) . "\n";
+        echo '-word: ' . $this->answer . "\n";
+        echo '-matching_letters_count: ' . $this->matching_letters_count . "\n";
+        echo '-matching_answers: ' . count($this->matching_answers) . "\n";
         echo "\n";
     }
 

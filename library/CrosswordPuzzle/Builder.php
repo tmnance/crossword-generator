@@ -6,6 +6,7 @@ use CrosswordPuzzle\Analysis\WordAnalysis;
 class Builder
 {
     private $words = [];
+    private $word_source = null;
     private $word_analysis = null;
     private $start_time = null;
     private $min_grid_dimension_score = null;
@@ -13,26 +14,33 @@ class Builder
     public function __construct()
     {
         $this->start_time = microtime(true);
-        $this->seedWords();
-echo 'seedWords -- ' . $this->getElapsedTime() . "\n";
-        $this->analyzeWords();
-echo 'analyzeWords -- ' . $this->getElapsedTime() . "\n";
-        $this->buildGrid();
-echo 'buildGrid -- ' . $this->getElapsedTime() . "\n";
-
-        $best_grid = Grid::getBestScoreGrid();
-        $best_grid->debug();
     }
 
-    private function getElapsedTime()
+    public function getElapsedTime()
     {
         return microtime(true) - $this->start_time;
     }
 
+    public function setSource($word_source)
+    {
+        $this->word_source = $word_source;
+        return $this;
+    }
+
+    public function getBestScoreGrid()
+    {
+        $this->seedWords();
+        $this->analyzeWords();
+        $this->buildGrid();
+        return Grid::getBestScoreGrid();
+    }
+
     private function seedWords()
     {
-        // sample config sourced from https://www.randomlists.com/random-words
-        $puzzle_json = file_get_contents('./config/sample_puzzle2.json');
+        if (empty($this->word_source)) {
+            throw new Exception('No word source set', 1);
+        }
+        $puzzle_json = file_get_contents($this->word_source);
         $puzzle_data = json_decode($puzzle_json);
 
         foreach ($puzzle_data as $answer => $clue) {
@@ -50,6 +58,9 @@ echo 'buildGrid -- ' . $this->getElapsedTime() . "\n";
     private function buildGrid()
     {
         $words = $this->words;
+        /**
+         * @todo [TN 2/26/16] can be tweaked for future optimization
+         */
         // shuffle($words);
         // // sort by word score
         // usort(
@@ -63,24 +74,16 @@ echo 'buildGrid -- ' . $this->getElapsedTime() . "\n";
         //         return ($a_score > $b_score) ? -1 : 1;
         //     }
         // );
-        $this->buildGridFromWordSet($words);
+        $this->buildGridTreeFromWordSet($words);
 
         return $this;
     }
 
-    private function buildGridFromWordSet($words)
+    private function buildGridTreeFromWordSet($words)
     {
         $grid = new Grid();
         $this->processNextGridWordPlacement($grid, $words);
         return $this;
-    }
-
-    private function updateMinGridDimensionScore(Grid $grid)
-    {
-        $dimension_score = $grid->getDimensionScore();
-        if (empty($this->min_grid_dimension_score) || $dimension_score < $this->min_grid_dimension_score) {
-            $this->min_grid_dimension_score = $dimension_score;
-        }
     }
 
     private function processNextGridWordPlacement(
@@ -142,6 +145,14 @@ echo 'buildGrid -- ' . $this->getElapsedTime() . "\n";
                 $failed_words,
                 $is_last_fail
             );
+        }
+    }
+
+    private function updateMinGridDimensionScore(Grid $grid)
+    {
+        $dimension_score = $grid->getDimensionScore();
+        if (empty($this->min_grid_dimension_score) || $dimension_score < $this->min_grid_dimension_score) {
+            $this->min_grid_dimension_score = $dimension_score;
         }
     }
 }

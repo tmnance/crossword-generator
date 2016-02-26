@@ -411,10 +411,18 @@ class Grid
             echo $grid_legend_x_row;
             echo $grid_box_top_bottom_border_row;
 
-            echo "METRICS:\n";
-            var_dump($this->getMetrics());
-            var_dump($this->getDimensionScore());
-            var_dump($this->getScore());
+            echo "STATISTICS:\n";
+            $stats = array_merge(
+                $this->getMetrics(),
+                [
+                    'dimension_score' => $this->getDimensionScore(),
+                    'total_score' => $this->getScore(),
+                ]
+            );
+
+            foreach ($stats as $key => $value) {
+                echo "-{$key}: {$value}\n";
+            }
         }
 
         echo "\n";
