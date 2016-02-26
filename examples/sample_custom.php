@@ -1,5 +1,5 @@
 <?php
-require_once '../autoloader.php';
+require_once '../library/autoloader.php';
 
 use CrosswordPuzzle\Builder as PuzzleBuilder;
 
