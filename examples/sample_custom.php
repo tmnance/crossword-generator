@@ -27,7 +27,7 @@ if (!empty($words_raw)) {
     // process form words
     $words_raw = $_POST['words'];
     // remove garbage chars
-    $words_raw = str_replace("\r", '', $words_raw);
+    $words_raw = str_replace(["\r", ','], ['', "\n"], $words_raw);
     $words_list = explode("\n", $words_raw);
 
     // cleanup input
