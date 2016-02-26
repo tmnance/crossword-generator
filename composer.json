@@ -1,0 +1,8 @@
+{
+    "name": "tmnance/crossword-generator",
+    "autoload": {
+        "psr-0" : {
+            "CrosswordPuzzle" : "library"
+        }
+    }
+}
