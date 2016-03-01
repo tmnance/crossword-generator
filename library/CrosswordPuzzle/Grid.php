@@ -436,7 +436,7 @@ class Grid
             'word_count' => count($this->inserted_words),
             'dim_size' => ($dim_x * $dim_y),
             // smaller the better (minimum 1)
-            'dim_ratio_deviation' => (max($dim_x, $dim_y) / (min($dim_x, $dim_y) ?: 1)),
+            'dim_aspect_ratio' => (max($dim_x, $dim_y) / (min($dim_x, $dim_y) ?: 1)),
             'interception_count' => $this->interception_count,
             'interception_bonus' => 1 + $this->interception_count - count($this->inserted_words),
         ];
@@ -448,7 +448,7 @@ class Grid
         $metrics = $this->getMetrics();
 
         $dimension_score = $metrics['dim_size'] - $metrics['interception_bonus'] * 25;
-        $dimension_score *= $metrics['dim_ratio_deviation'];
+        $dimension_score *= $metrics['dim_aspect_ratio'];
         return 10000 + $dimension_score;
     }
 
